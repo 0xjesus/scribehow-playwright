@@ -4,6 +4,8 @@
  * Uso: node scribe.mjs <status|pages|open|start|complete|stop> [url]
  */
 import { chromium } from "playwright";
+import fs from "node:fs";
+import { saveFocus, restoreFocus, demote } from "./wm.mjs";
 
 const CDP = process.env.SCRIBEHOW_CDP || "http://127.0.0.1:9333";
 const STORE_ID = "okfkdaglfjjjfefdcppliegebpoegaii";
@@ -121,14 +123,15 @@ async function openUrl(browser, url) {
 
 async function sidepanel(browser) {
   const extId = await detectExtId();
-  const url = `chrome-extension://${extId}/src/sidepanel/sidepanel-home.html`;
   const ctx = browser.contexts()[0];
-  let page = pagesOf(browser).find((p) => p.url().startsWith(`chrome-extension://${extId}`));
+  let page = pagesOf(browser).find((p) => /\/sidepanel\//.test(p.url()));
   if (!page) {
     page = await ctx.newPage();
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
+    await page.goto(`chrome-extension://${extId}/src/sidepanel/sidepanel.html`, {
+      waitUntil: "domcontentloaded",
+      timeout: 15000,
+    });
   }
-  await page.bringToFront();
   return page;
 }
 
@@ -152,21 +155,26 @@ async function completeCapture(browser) {
       p.getByRole("button", { name: /complete capture/i }),
     );
     if (await btn.count()) {
-      await btn.first().click({ timeout: 5000 });
+      await btn.first().click({ timeout: 5000, force: true });
       console.log("Complete Capture clickeado");
       await p.waitForTimeout(2000);
-      const urls = pagesOf(browser)
-        .map((x) => x.url())
-        .filter((u) => /scribehow\.com\/(shared|viewer|page)\//.test(u));
-      if (urls.length) console.log(urls.join("\n"));
       return;
     }
   }
-  console.error("no encontré Complete Capture. ¿está grabando? el botón flota en la página.");
+  const panel = pages.find((p) => /\/sidepanel\//.test(p.url()));
+  if (panel) {
+    await panel.mouse.click(180, 875);
+    console.log("Complete Capture clickeado (coords)");
+    await panel.waitForTimeout(2000);
+    return;
+  }
+  console.error("no encontré Complete Capture.");
   process.exit(2);
 }
 
-const browser = cmd === "status" ? null : await connect();
+const prev = cmd === "status" || cmd === "stop" ? null : saveFocus();
+const browser = cmd === "status" || cmd === "stop" ? null : await connect();
+const pidFile = `${process.env.HOME}/.local/share/scribehow-playwright/chrome.pid`;
 try {
   if (cmd === "status") await status();
   else if (cmd === "pages") await listPages(browser);
@@ -175,12 +183,12 @@ try {
   else if (cmd === "start") await startCapture(browser);
   else if (cmd === "complete") await completeCapture(browser);
   else if (cmd === "stop") {
-    const pidFile = `${process.env.HOME}/.local/share/scribehow-playwright/chrome.pid`;
-    console.log("cerrá el Chrome de Scribehow a mano o: kill $(cat " + pidFile + ")");
+    console.log("cerrá el Chromium de Scribehow: kill $(cat " + pidFile + ")");
   } else {
     console.error("uso: scribe.mjs status|pages|ext|open <url>|start|complete|stop");
     process.exit(1);
   }
 } finally {
-  // no browser.close(): connectOverCDP no debe matar el Chrome headed
+  if (fs.existsSync(pidFile)) demote(fs.readFileSync(pidFile, "utf8").trim());
+  if (prev) restoreFocus(prev);
 }

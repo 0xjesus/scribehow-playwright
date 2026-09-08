@@ -3,12 +3,12 @@
  * Chromium headed (no Google Chrome 146: ignora --load-extension).
  * Deja CDP en 127.0.0.1:9333 y la extensión Scribe unpacked.
  */
-import { chromium } from "playwright";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { saveFocus, restoreFocus, demote } from "./wm.mjs";
 
 const DATA = process.env.SCRIBEHOW_DATA_DIR || path.join(os.homedir(), ".local/share/scribehow-playwright");
 const EXT = path.join(DATA, "extension");
@@ -25,6 +25,7 @@ if (!fs.existsSync(path.join(EXT, "manifest.json"))) {
 try {
   const r = await fetch(`http://127.0.0.1:${PORT}/json/version`);
   if (r.ok) {
+    if (fs.existsSync(PIDFILE)) demote(fs.readFileSync(PIDFILE, "utf8").trim());
     console.log(`ya está arriba CDP http://127.0.0.1:${PORT}`);
     console.log(await r.text());
     process.exit(0);
@@ -34,13 +35,14 @@ try {
 }
 
 fs.mkdirSync(PROFILE, { recursive: true });
-
+const prev = saveFocus();
+const log = fs.openSync("/tmp/scribehow-playwright-chrome.log", "a");
 const child = spawn(
   process.execPath,
   [path.join(SKILL, "scripts", "chrome-main.mjs")],
   {
     detached: true,
-    stdio: ["ignore", "inherit", "inherit"],
+    stdio: ["ignore", log, log],
     env: {
       ...process.env,
       SCRIBEHOW_DATA_DIR: DATA,
@@ -56,6 +58,8 @@ for (let i = 0; i < 50; i++) {
   try {
     const r = await fetch(`http://127.0.0.1:${PORT}/json/version`);
     if (r.ok) {
+      demote(child.pid);
+      restoreFocus(prev);
       console.log(`CDP http://127.0.0.1:${PORT}`);
       console.log(`PID ${child.pid}`);
       console.log(`perfil ${PROFILE}`);

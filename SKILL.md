@@ -16,6 +16,7 @@ uno built-in, no Scribe). Por eso `launch.sh` usa Chromium de Playwright.
 
 Perfil dedicado: `~/.local/share/scribehow-playwright/`
 CDP: `http://127.0.0.1:9333` (no 9222: ese lo usa el Chrome del usuario).
+El Chromium **se ve**, pero no debe robar el foco: `launch.sh` y `scribe.mjs` guardan la ventana activa, demotean la de Scribe (`_NET_WM_USER_TIME=0`) y restauran. Nunca `bringToFront`. Clicks van por CDP en segundo plano.
 Web Store ID: `okfkdaglfjjjfefdcppliegebpoegaii`. Cargada unpacked el ID lo da Chrome (path-hash); `scribe.mjs status` / `ext` lo detectan. No asumas el ID de la store.
 
 ```bash
@@ -47,7 +48,8 @@ Clicks reales (`page.click`, `getByRole`, login, menú). Cada clic es un paso de
 |---|---|
 | "uso claude-in-chrome, es Chrome" | Otro perfil. Scribehow no ve esos clics. |
 | "Playwright MCP default" | Chromium limpio, sin extensión. |
-| "headless" | Scribehow necesita UI headed. |
+| "headless" | Scribehow necesita UI headed, pero **sin foco**. |
+| "bringToFront / windowactivate" | Te saca de tu ventana. Prohibido. |
 | "grabo las 19 de una" | Un capture = un flujo. Completá y arrancá de nuevo. |
 
 ## Errores

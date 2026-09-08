@@ -19,6 +19,11 @@ const context = await chromium.launchPersistentContext(PROFILE, {
     `--remote-debugging-address=127.0.0.1`,
     `--disable-extensions-except=${EXT}`,
     `--load-extension=${EXT}`,
+    `--window-position=80,80`,
+    `--disable-renderer-backgrounding`,
+    `--disable-backgrounding-occluded-windows`,
+    `--disable-background-timer-throttling`,
+    `--noerrdialogs`,
   ],
 });
 
