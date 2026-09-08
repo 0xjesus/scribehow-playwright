@@ -1,0 +1,9 @@
+{
+  "name": "scribehow-playwright",
+  "private": true,
+  "type": "module",
+  "description": "Playwright CDP helper for the Scribehow-loaded Chrome profile",
+  "dependencies": {
+    "playwright": "^1.55.0"
+  }
+}
