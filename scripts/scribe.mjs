@@ -137,39 +137,29 @@ async function sidepanel(browser) {
 
 async function startCapture(browser) {
   const page = await sidepanel(browser);
-  const btn = page.getByRole("button", { name: /start capture/i }).first();
+  const root = page.frameLocator("#scribe-sidepanel-iframe");
+  const btn = root.getByRole("button", { name: /start capture/i }).first();
   try {
     await btn.click({ timeout: 8000 });
     console.log("Start Capture clickeado");
   } catch {
-    console.error("no encontré Start Capture. ¿sesión de Scribehow logueada en ESTE Chrome?");
-    console.error("abrí https://scribehow.com en la ventana que lanzó launch.sh y entrá.");
+    console.error("no encontré Start Capture. ¿sesión de Scribehow logueada en ESTE Chromium?");
+    console.error("entrà en https://scribehow.com en la ventana de launch.sh.");
     process.exit(2);
   }
 }
 
 async function completeCapture(browser) {
-  const pages = pagesOf(browser);
-  for (const p of pages) {
-    const btn = p.getByTestId("extensionCompleteRecordingButton").or(
-      p.getByRole("button", { name: /complete capture/i }),
-    );
-    if (await btn.count()) {
-      await btn.first().click({ timeout: 5000, force: true });
-      console.log("Complete Capture clickeado");
-      await p.waitForTimeout(2000);
-      return;
-    }
+  const page = pagesOf(browser).find((p) => /\/sidepanel\//.test(p.url())) || (await sidepanel(browser));
+  const root = page.frameLocator("#scribe-sidepanel-iframe");
+  const btn = root.getByRole("button", { name: /complete capture/i }).first();
+  try {
+    await btn.click({ timeout: 8000 });
+    console.log("Complete Capture clickeado");
+  } catch {
+    console.error("no encontré Complete Capture en el iframe del sidepanel.");
+    process.exit(2);
   }
-  const panel = pages.find((p) => /\/sidepanel\//.test(p.url()));
-  if (panel) {
-    await panel.mouse.click(180, 875);
-    console.log("Complete Capture clickeado (coords)");
-    await panel.waitForTimeout(2000);
-    return;
-  }
-  console.error("no encontré Complete Capture.");
-  process.exit(2);
 }
 
 const prev = cmd === "status" || cmd === "stop" ? null : saveFocus();
