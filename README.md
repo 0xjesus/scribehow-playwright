@@ -4,6 +4,16 @@ Chrome/Chromium headed con la extensión **Scribe** cargada. Playwright se conec
 
 Google Chrome 146 **no** carga `--load-extension`. El launcher usa Chromium de Playwright.
 
+## Instalación
+
+```bash
+git clone https://github.com/0xjesus/scribehow-playwright.git ~/.grok/skills/scribehow-playwright
+ln -s ~/.grok/skills/scribehow-playwright ~/.claude/skills/scribehow-playwright   # Claude Code
+~/.grok/skills/scribehow-playwright/scripts/setup.sh   # baja la extensión Scribe + npm + Chromium de Playwright
+```
+
+Requisitos: Linux X11 con `wmctrl`, `xprop`, `pstree`, `python3`, `curl`, Node ≥ 20. Actualizar: `git pull` en la carpeta.
+
 ## Uso
 
 ```bash
